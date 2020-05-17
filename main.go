@@ -53,9 +53,10 @@ func main() {
 	// =========================================================================
 	// Start API Service
 
+	ps := ProductService{db}
 	api := http.Server{
 		Addr:         "localhost:3000",
-		Handler:      http.HandlerFunc(ListProducts),
+		Handler:      http.HandlerFunc(ps.List),
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 5 * time.Second,
 	}
@@ -106,12 +107,12 @@ func main() {
 
 // Product is something we sell
 type Product struct {
-	ID          string    `json:"id"`
-	Name        string    `json:"name"`
-	Price       int       `json:"price"`
-	Quantity    int       `json:"quantity"`
-	DateCreated time.Time `json:"date_created"`
-	DateUpdated time.Time `json:"date_updated"`
+	ID          string    `db:"product_id" json:"id"`
+	Name        string    `db:"name" json:"name"`
+	Price       int       `db:"cost" json:"price"`
+	Quantity    int       `db:"quantity" json:"quantity"`
+	DateCreated time.Time `db:"date_created" json:"date_created"`
+	DateUpdated time.Time `db:"date_updated" json:"date_updated"`
 }
 
 // ProductService has handler methods for dealing with products
@@ -126,9 +127,9 @@ func (p *ProductService) List(w http.ResponseWriter, r *http.Request) {
 	list := []Product{}
 
 	const q = "select * from products"
-	if err := p.db.Select(list, q); err != nil {
-		log.Fatalf("List : error retrieving products [%s]", err)
+	if err := p.db.Select(&list, q); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("List : error retrieving products [%s]", err)
 		return
 	}
 
