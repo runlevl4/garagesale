@@ -13,6 +13,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/runlevl4/garagesale/internal/platform/database"
+	"github.com/runlevl4/garagesale/internal/product"
 )
 
 func main() {
@@ -86,16 +87,6 @@ func main() {
 	}
 }
 
-// Product is something we sell
-type Product struct {
-	ID          string    `db:"product_id" json:"id"`
-	Name        string    `db:"name" json:"name"`
-	Price       int       `db:"cost" json:"price"`
-	Quantity    int       `db:"quantity" json:"quantity"`
-	DateCreated time.Time `db:"date_created" json:"date_created"`
-	DateUpdated time.Time `db:"date_updated" json:"date_updated"`
-}
-
 // ProductService has handler methods for dealing with products
 type ProductService struct {
 	db *sqlx.DB
@@ -104,11 +95,8 @@ type ProductService struct {
 // ListProducts is a basic HTTP Handler.
 func (p *ProductService) List(w http.ResponseWriter, r *http.Request) {
 
-	// Empty list of products to populate from database
-	list := []Product{}
-
-	const q = "select * from products"
-	if err := p.db.Select(&list, q); err != nil {
+	list, err := product.List(p.db)
+	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("List : error retrieving products [%s]", err)
 		return
