@@ -2,9 +2,8 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	"log"
-	"math/rand"
 	"net/http"
 	"os"
 	"os/signal"
@@ -25,7 +24,7 @@ func main() {
 
 	api := http.Server{
 		Addr:         "localhost:3000",
-		Handler:      http.HandlerFunc(Echo),
+		Handler:      http.HandlerFunc(ListProducts),
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 5 * time.Second,
 	}
@@ -74,16 +73,28 @@ func main() {
 	}
 }
 
-// Echo is a basic HTTP Handler.
-func Echo(w http.ResponseWriter, r *http.Request) {
+// Product is something we sell
+type Product struct {
+	Name     string
+	Price    int
+	Quantity int
+}
 
-	// Print a random number at the beginning and end of each request.
-	n := rand.Intn(1000)
-	log.Println("start", n)
-	defer log.Println("end", n)
+// ListProducts is a basic HTTP Handler.
+func ListProducts(w http.ResponseWriter, r *http.Request) {
+	list := []Product{
+		{Name: "Comic Books", Price: 75, Quantity: 50},
+		{Name: "McDonald's Toys", Price: 25, Quantity: 120},
+	}
 
-	// Simulate a long-running request.
-	time.Sleep(3 * time.Second)
+	data, err := json.Marshal(list)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("listProducts : error marshaling json : %s\n", err)
+		return
+	}
 
-	fmt.Fprintf(w, "You asked to %s %s\n", r.Method, r.URL.Path)
+	if _, err := w.Write(data); err != nil {
+		log.Printf("listProducts : error writing response : %s\n", err)
+	}
 }
