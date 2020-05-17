@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"flag"
 	"log"
 	"net/http"
 	"net/url"
@@ -12,17 +11,15 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/runlevl4/garagesale/schema"
-
 	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
+	"github.com/runlevl4/garagesale/internal/platform/database"
 )
 
 func main() {
 
 	// =========================================================================
 	// Setup database
-	db, err := openDB()
+	db, err := database.Open()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -130,6 +127,7 @@ func (p *ProductService) List(w http.ResponseWriter, r *http.Request) {
 	if _, err := w.Write(data); err != nil {
 		log.Printf("listProducts : error writing response : %s\n", err)
 	}
+	log.Printf("listProducts | %s | %d | %s\n", http.StatusText(http.StatusOK), http.StatusOK, string(data))
 }
 
 func openDB() (*sqlx.DB, error) {
