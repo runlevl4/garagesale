@@ -4,19 +4,16 @@ package main
 import (
 	"flag"
 	"log"
-	"net/url"
 
-	"github.com/runlevl4/garagesale/schema"
-
-	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
+	"github.com/runlevl4/garagesale/internal/platform/database"
+	"github.com/runlevl4/garagesale/internal/schema"
 )
 
 func main() {
 
 	// =========================================================================
 	// Setup database
-	db, err := openDB()
+	db, err := database.Open()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -38,20 +35,4 @@ func main() {
 		return
 	}
 
-}
-
-func openDB() (*sqlx.DB, error) {
-	q := url.Values{}
-	q.Set("sslmode", "disable")
-	q.Set("timezone", "utc")
-
-	u := url.URL{
-		Scheme:   "postgres",
-		User:     url.UserPassword("postgres", "postgres"),
-		Host:     "localhost",
-		Path:     "postgres",
-		RawQuery: q.Encode(),
-	}
-
-	return sqlx.Open("postgres", u.String())
 }
