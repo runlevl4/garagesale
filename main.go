@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
-	"github.com/runlevl4/garagesale/schema"
 	"log"
 	"net/http"
 	"net/url"
@@ -12,6 +11,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/runlevl4/garagesale/schema"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -105,16 +106,30 @@ func main() {
 
 // Product is something we sell
 type Product struct {
-	Name     string `json:"name"`
-	Price    int    `json:"price"`
-	Quantity int    `json:"quantity"`
+	ID          string    `json:"id"`
+	Name        string    `json:"name"`
+	Price       int       `json:"price"`
+	Quantity    int       `json:"quantity"`
+	DateCreated time.Time `json:"date_created"`
+	DateUpdated time.Time `json:"date_updated"`
+}
+
+// ProductService has handler methods for dealing with products
+type ProductService struct {
+	db *sqlx.DB
 }
 
 // ListProducts is a basic HTTP Handler.
-func ListProducts(w http.ResponseWriter, r *http.Request) {
-	list := []Product{
-		{Name: "Comic Books", Price: 75, Quantity: 50},
-		{Name: "McDonald's Toys", Price: 25, Quantity: 120},
+func (p *ProductService) List(w http.ResponseWriter, r *http.Request) {
+
+	// Empty list of products to populate from database
+	list := []Product{}
+
+	const q = "select * from products"
+	if err := p.db.Select(list, q); err != nil {
+		log.Fatalf("List : error retrieving products [%s]", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	data, err := json.Marshal(list)
