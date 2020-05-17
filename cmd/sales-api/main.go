@@ -2,18 +2,15 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/jmoiron/sqlx"
+	"github.com/runlevl4/garagesale/cmd/sales-api/internal/handlers"
 	"github.com/runlevl4/garagesale/internal/platform/database"
-	"github.com/runlevl4/garagesale/internal/product"
 )
 
 func main() {
@@ -35,7 +32,7 @@ func main() {
 	// =========================================================================
 	// Start API Service
 
-	ps := ProductService{db}
+	ps := handlers.Product{db}
 	api := http.Server{
 		Addr:         "localhost:3000",
 		Handler:      http.HandlerFunc(ps.List),
@@ -85,51 +82,4 @@ func main() {
 			log.Fatalf("main : could not stop server gracefully : %v", err)
 		}
 	}
-}
-
-// ProductService has handler methods for dealing with products
-type ProductService struct {
-	db *sqlx.DB
-}
-
-// ListProducts is a basic HTTP Handler.
-func (p *ProductService) List(w http.ResponseWriter, r *http.Request) {
-
-	list, err := product.List(p.db)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Printf("List : error retrieving products [%s]", err)
-		return
-	}
-
-	data, err := json.Marshal(list)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Printf("listProducts : error marshaling json : %s\n", err)
-		return
-	}
-
-	// Note that header needs to be set before status is set.
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	if _, err := w.Write(data); err != nil {
-		log.Printf("listProducts : error writing response : %s\n", err)
-	}
-	log.Printf("listProducts | %s | %d | %s\n", http.StatusText(http.StatusOK), http.StatusOK, string(data))
-}
-
-func openDB() (*sqlx.DB, error) {
-	q := url.Values{}
-	q.Set("sslmode", "disable")
-	q.Set("timezone", "utc")
-
-	u := url.URL{
-		Scheme:   "postgres",
-		User:     url.UserPassword("postgres", "postgres"),
-		Host:     "localhost",
-		Path:     "postgres",
-		RawQuery: q.Encode(),
-	}
-
-	return sqlx.Open("postgres", u.String())
 }
