@@ -5,13 +5,25 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 )
 
 func main() {
+
+	// =========================================================================
+	// Setup database
+	db, err := openDB()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
 
 	// =========================================================================
 	// App Starting
@@ -94,7 +106,26 @@ func ListProducts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Note that header needs to be set before status is set.
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
 	if _, err := w.Write(data); err != nil {
 		log.Printf("listProducts : error writing response : %s\n", err)
 	}
+}
+
+func openDB() (*sqlx.DB, error) {
+	q := url.Values{}
+	q.Set("sslmode", "disable")
+	q.Set("timezone", "utc")
+
+	u := url.URL{
+		Scheme:   "postgres",
+		User:     url.UserPassword("postgres", "postgres"),
+		Host:     "localhost",
+		Path:     "postgres",
+		RawQuery: q.Encode(),
+	}
+
+	return sqlx.Open("postgres", u.String())
 }
